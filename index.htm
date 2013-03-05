@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Euhhh</title>
+		<meta charset="UTF-8" />
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" ></script>
+		<script src="/slab.js" ></script>
+		<style type="text/css">
+			.slabtexted .slabtext {
+				display: -moz-inline-box;
+				display: inline-block;
+				white-space: nowrap;
+			}
+			.slabtextinactive .slabtext {
+				display: inline;
+				white-space: normal;
+				font-size: 1em !important;
+				letter-spacing: inherit !important;
+				word-spacing: inherit !important;
+				*letter-spacing: 0 !important;
+				*word-spacing: 0 !important;
+			}
+			.slabtextdone .slabtext {
+				display: block;
+			}
+
+		
+		</style>
+	</head>
+	<body>
+		<div id="message"></div>
+	</body>
+	<script type="text/javascript">
+		$(function() {
+			var message = document.getElementById("message");
+			var socket;
+			var connOpen = false;
+			var server = "ws://localhost:8080";
+			var stS = "<span class='slabtext'>";
+			var stE = "</span>";
+			var euhs = [];
+			var currentEuh;
+
+			socket = new WebSocket(server, "euhhh-protocol");
+
+			socket.addEventListener("open", function(event) {
+				connOpen = true;
+				console.log(new Date() + ' Connected to ' + server);
+				message.textContent = "Connected";
+			});
+
+			// Display messages received from the server
+			socket.addEventListener("message", function(event) {
+				packet = JSON.parse(event.data);
+
+				switch(packet.type) {
+					case 'text':
+						currentEuh = packet.message;
+						$("#message").lastChild();
+						$('#message').slabText();
+						break
+					case 'break':
+						euhs.push(currentEuh);
+						console.log(euhs);
+						$("#message").append(stS + currentEuh + stE);
+						$('#message').slabText();
+						break
+				}
+				$('html, body').animate({scrollTop:$(document).height()}, 'slow');
+			});
+
+			// Display any errors that occur
+			socket.addEventListener("error", function(event) {
+				console.log(new Date() + " Server returned Error: " + event.data);
+			});
+
+			socket.addEventListener("close", function(event) {
+				connOpen = false;
+				console.log(new Date() + " Disconnected from server");
+				message.textContent = "Connection lost";
+			});
+
+			$(window).keypress(function(e) {
+				if ((e.keyCode == 0 || e.keyCode == 32) && connOpen) {
+					socket.send('{"command": "update"}');
+					console.log(new Date() + " Sending update to server " + server);
+				}
+			});
+
+			$(window).keyup(function(e) {
+				if ((e.keyCode == 0 || e.keyCode == 32) && connOpen) {
+					socket.send('{"command": "shut"}');
+					console.log(new Date() + " Sending shut to server " + server);
+				}
+			});
+
+		});
+	</script>
+</html>
